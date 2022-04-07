@@ -1,1 +1,3 @@
 # legrid
+
+![screenshot](screenshot.png)
