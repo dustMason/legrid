@@ -1,0 +1,87 @@
+body {
+    margin: 0;
+    background: #3f3f3e;
+    padding: 15px;
+    font-family: "Courier", monospace;
+    color: #fff;
+}
+
+header img {
+    width: 92px;
+    height: 34px;
+}
+
+canvas {
+    box-shadow: rgba(0, 0, 0, 5) 0 2px 0;
+}
+
+ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+li {
+    display: inline-block;
+    margin: 0;
+    padding: 0;
+}
+
+a {
+    text-decoration: none;
+    color: #fff;
+}
+
+select, input {
+    font-size: 1.2em;
+    padding: 8px;
+    margin: 0;
+}
+
+#logo {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+}
+
+#left-nav {
+    margin: 8px 0 20px 120px;
+}
+
+#right-nav {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+}
+
+nav a {
+    display: inline-block;
+    background: #3172A0;
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.52);
+    border-radius: 10px;
+    padding: 5px 10px;
+    margin: 0;
+    color: #fff;
+    font-size: 14px;
+    text-transform: uppercase;
+}
+
+nav a.active {
+    background: #fff;
+    color: #000;
+}
+
+#tools-draw div {
+    padding: 0 0 10px 0;
+}
+
+#tools-draw li {
+    padding: 0 10px 0 0;
+}
+
+#tools-draw li.active path,
+#tools-draw li.active rect,
+#tools-draw li.active circle {
+    filter: drop-shadow(5px 5px 0px rgb(0 0 0 / 0.8));
+
+}

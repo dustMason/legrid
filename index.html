@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="./style.css"/>
+    <meta charset="UTF-8">
+</head>
+<body>
+    <header>
+        <div id="logo"><img src="./dots.png" alt="dots"></div>
+        <nav id="left-nav">
+            <ul>
+                <li><a href="#" data-mode="draw">✏️ DRAW</a></li>
+                <li><a href="#" data-mode="fill">💅 FILL</a></li>
+                <li><a href="#" data-mode="move">🖐 MOVE</a></li>
+                <li><a href="#" data-mode="copy">✌️ COPY</a></li>
+            </ul>
+        </nav>
+        <nav id="right-nav">
+            <ul>
+<!--                <li><a href="#new">NEW</a></li>-->
+<!--                <li><a href="#load">LOAD</a></li>-->
+<!--                <li><a href="#save">SAVE</a></li>-->
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <div id="sketch"></div>
+    </main>
+    <section>
+        <div id="tools-draw">
+            <h1>DRAW</h1>
+            <div class="tools">
+                <ul>
+                    <li data-tool="cornerSE">
+                        <svg width='55' height='55' viewBox='0 0 55 55' fill='none' xmlns='http://www.w3.org/2000/svg'>
+                            <path d='M1.63358e-06 49.8982C27.558 49.8982 49.8982 27.558 49.8982 0L7.62939e-06 -2.18112e-06L1.63358e-06 49.8982Z' fill='#EB6863'/>
+                        </svg>
+                    </li>
+                    <li data-tool="cornerSW">
+                        <svg width="55" height="55" viewBox="0 0 55 55" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M0.10178 0.101776C0.101778 27.6598 22.442 50 50 50C50 50 50 50 50 50L50 0.101784L0.10178 0.101776Z" fill="#EB6863"/>
+                        </svg>
+                    </li>
+                    <li data-tool="cornerNE">
+                        <svg width="55" height="55" viewBox="0 0 55 55" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M2.74926e-06 0C27.558 0 49.8982 22.3402 49.8982 49.8982ZM0 0V49.8982L49.8982 49.8982" fill="#EB6863"/>
+                        </svg>
+                    </li>
+                    <li data-tool="cornerNW">
+                        <svg width="55" height="55" viewBox="0 0 55 55" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M0 50C-1.2046e-06 22.442 22.3402 0.101774 49.8982 0.101773ZM0 50L49.8982 50L49.8982 0.101773" fill="#EB6863"/>
+                        </svg>
+                    </li>
+                    <li data-tool="square">
+                        <svg width="55" height="55" viewBox="0 0 55 55" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect width="50" height="50" fill="#EB6863"/>
+                        </svg>
+                    </li>
+                    <li data-tool="circle">
+                        <svg width="55" height="55" viewBox="0 0 55 55" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="25" cy="25" r="25" fill="#EB6863"/>
+                        </svg>
+                    </li>
+                    <li data-tool="pen">
+                        <svg width="69" height="56" viewBox="0 0 69 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M8 48C9.51323 40.2964 15.6762 21.9177 28.2222 10.032C43.9048 -4.82498 22.8571 39.7461 34 39.7461C42.9143 39.7461 55.0476 19.9367 60 10.032" stroke="#EB6863" stroke-width="13" stroke-linecap="square"/>
+                        </svg>
+                    </li>
+                </ul>
+            </div>
+            <div class="colors">
+                <ul>
+                    <li><svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="25" cy="25" r="25" fill="#000"/></svg></li>
+                    <li><svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="25" cy="25" r="25" fill="#000"/></svg></li>
+                    <li><svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="25" cy="25" r="25" fill="#000"/></svg></li>
+                    <li><svg width="49" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="25" cy="25" r="25" fill="#000"/></svg></li>
+                    <li><svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="25" cy="25" r="25" fill="#000"/></svg></li>
+                    <li><svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="25" cy="25" r="25" fill="#000"/></svg></li>
+                    <li><svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="25" cy="25" r="25" fill="#000"/></svg></li>
+                </ul>
+            </div>
+        </div>
+        <div id="tools-type">
+            <h1>TYPE</h1>
+            <form action="" id="type-form">
+                <select name="font" id="font">
+                    <option value="albers">Albers</option>
+                    <option value="sevenplus">Seven Plus</option>
+                </select>
+                <input type="text" id="type" name="message" />
+                <input type="submit" value="Enter" />
+            </form>
+        </div>
+    </section>
+    <script src="./p5.min.js"></script>
+    <script src="./sketch.js"></script>
+</body>
+</html>
