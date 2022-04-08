@@ -32,6 +32,10 @@ a {
     color: #fff;
 }
 
+h1 {
+    font-weight: normal;
+}
+
 a.button {
     display: inline-block;
     background: #3172A0;

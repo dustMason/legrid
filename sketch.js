@@ -1,21 +1,34 @@
 class Layer {
   constructor(name, cells) {
-    this.cells = cells;
+    this.cells = cells; // array of Cell objects
     this.name = name;
     this.visible = true;
+    this.locations = new Set(this.cells.map(c => { return `${c.gx}.${c.gy}` })); // set of [gx,gy]
   }
 
-  isOn(mx, my) {
-    for (let i = 0; i < this.cells.length; i++) {
-      if (this.cells[i].isOn(mx, my)) {
-        return true;
-      }
+  has(gx, gy) {
+    return this.locations.has(`${gx}.${gy}`);
+  }
+
+  push(cell, smooth = false) {
+    const k = `${cell.gx}.${cell.gy}`
+    if (this.locations.has(k)) {
+      return;
     }
-    return false;
+    this.locations.add(k);
+    this.cells.push(cell);
+    if (smooth) {
+      this.smooth();
+    }
   }
 
-  push(cell) {
-    this.cells.push(cell);
+  remove(gx, gy) {
+    const k = `${gx}.${gy}`
+    if (!this.locations.has(k)) {
+      return;
+    }
+    this.locations.delete(k);
+    this.cells = this.cells.filter(c => { return c.gx !== gx || c.gy !== gy });
   }
 
   draw() {
@@ -35,7 +48,11 @@ class Layer {
   }
 
   finalize() {
-    this.cells.forEach(cell => { cell.finalize() });
+    this.cells.forEach(cell => {
+      this.locations.delete(`${cell.gx}.${cell.gy}`);
+      cell.finalize()
+      this.locations.add(`${cell.gx}.${cell.gy}`);
+    });
   }
 
   fill(color) {
@@ -131,16 +148,9 @@ class Cell {
   finalize() {
     this.x += this._offset[0];
     this.y += this._offset[1];
+    this.gx = Math.floor(this.x / gridZoom);
+    this.gy = Math.floor(this.y / gridZoom);
     this._offset = [0,0];
-  }
-
-  isOn(x, y) {
-    return (
-      x >= this.x &&
-      x < this.x + gridZoom &&
-      y >= this.y &&
-      y < this.y + gridZoom
-    );
   }
 }
 
@@ -165,6 +175,7 @@ fontShapeMap = {
 
 // modes
 const _draw = "draw";
+const _pull = "pull";
 const _fill = "fill";
 const _move = "move";
 const _copy = "copy";
@@ -188,9 +199,9 @@ const borderColor = 1;
 
 let fonts = {};
 let currentLayer = new Layer("Layer 1", []); // list of gridCells in the current drawing layer
-let currentPos = [-1, -1]; // current grid pos
 let draggingLayer = -1;
 let dragStart = [0,0];
+let shiftPressed = false;
 
 let currentDrawColor, mode, currentDrawTool;
 changeMode(_draw);
@@ -198,12 +209,22 @@ changeDrawColor(1)
 changeDrawTool(_pen);
 
 // TODO
-// hold shift to add to last layer
-// part puller tool (hold shift to pull entire layer)
 // add 2x sized elbow pieces
 // show part on mouseover in draw mode
 // controls for backplate / border color
 // new / save / load buttons
+
+function keyPressed() {
+  if (keyCode === SHIFT) {
+    shiftPressed = true;
+  }
+}
+
+function keyReleased() {
+  if (keyCode === SHIFT) {
+    shiftPressed = false;
+  }
+}
 
 function preload() {
   fonts["albers"] = loadJSON("/fonts/albers.json");
@@ -318,21 +339,36 @@ function mouseDragged() {
     }
   }
   if (mode === _draw) {
-    placeTile(mouseX, mouseY);
+    placeTile(mouseX, mouseY, shiftPressed);
+  }
+  if (mode === _pull) {
+    removeTile(mouseX, mouseY);
   }
   return false; // prevent default browser behavior
 }
 
-function placeTile(x, y) {
-  const newCell = createCell(x, y, currentDrawColor, currentDrawTool);
-  if (!newCell) return;
-  if (currentLayer.empty()) {
+function placeTile(mx, my, addToLastLayer = false) {
+  const gx = floor(mx / gridZoom);
+  const gy = floor(my / gridZoom);
+  const newCell = new Cell(gx, gy, currentDrawColor, currentDrawTool);
+  const smooth = currentDrawTool === _pen;
+  if (addToLastLayer) {
+    stack[stack.length - 1].push(newCell, smooth);
+  } else if (currentLayer.empty()) {
     currentLayer = new Layer(`Layer ${stack.length + 1}`, [newCell]);
   } else {
-    currentLayer.push(newCell);
+    currentLayer.push(newCell, smooth);
   }
 }
 
+function removeTile(mx, my) {
+  const layer = selectLayerIndex(mx, my);
+  if (layer > 1) {
+    const gx = floor(mx / gridZoom);
+    const gy = floor(my / gridZoom);
+    stack[layer].remove(gx, gy);
+  }
+}
 
 function onBackplate(x, y) {
   return (
@@ -350,14 +386,13 @@ function mouseReleased() {
     dragStart = [0,0];
     return false;
   }
+  if (!onBackplate(mouseX, mouseY)) {
+    return false;
+  }
   if (mode === _draw) {
-    if (currentLayer.empty() && onBackplate(mouseX, mouseY)) {
-      placeTile(mouseX, mouseY);
-    }
-    if (currentDrawTool === _pen) {
-      currentLayer.smooth();
-    }
-    if (!currentLayer.empty()) {
+    if (currentLayer.empty()) {
+      placeTile(mouseX, mouseY, shiftPressed);
+    } else {
       addLayer(currentLayer);
       currentLayer = new Layer(`Layer ${stack.length + 1}`, []);
     }
@@ -365,28 +400,17 @@ function mouseReleased() {
   if (mode === _fill) {
     const target = selectLayerIndex(mouseX, mouseY);
     if (target > 1) { // don't fill background or border
-      fillLayer(target, currentDrawColor);
+      stack[target].fill(currentDrawColor);
     }
+  }
+  if (mode === _pull) {
+    removeTile(mouseX, mouseY);
   }
   return false; // prevent default browser behavior
 }
 
 function renderLayers(layers) {
   layers.forEach(layer => { layer.draw() })
-}
-
-function fillLayer(index, color) {
-  stack[index].fill(color);
-}
-
-function createCell(mx, my, color, shape) {
-  const x = floor(mx / gridZoom);
-  const y = floor(my / gridZoom);
-  if ([x, y] === currentPos) {
-    return null;
-  }
-  currentPos = [x, y];
-  return new Cell(x, y, color, shape);
 }
 
 function makeBackground(color) {
@@ -413,8 +437,10 @@ function makeBorder(width, height, color) {
 }
 
 function selectLayerIndex(mx, my) {
+  const gx = floor(mx / gridZoom);
+  const gy = floor(my / gridZoom);
   for (let i = stack.length - 1; i >= 0; i--) {
-    if (stack[i].isOn(mx, my)) {
+    if (stack[i].has(gx, gy) && stack[i].visible) {
       return i;
     }
   }
@@ -430,7 +456,6 @@ function renderLayerTable() {
       row.querySelector('.layer-name').textContent = layer.name
       row.querySelector(".layer-visible input").checked = layer.visible;
       row.querySelector(".layer-visible input").value = index;
-      // row.querySelector('.layer-color').style.backgroundColor = palette[stack[i].cells[0].color];
       row.querySelector('.delete-layer').dataset.index = index;
       row.querySelector('.delete-layer').addEventListener('click', (e) => {
         const i = parseInt(e.target.dataset.index);

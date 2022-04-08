@@ -10,6 +10,7 @@
         <nav id="left-nav">
             <ul>
                 <li><a href="#" data-mode="draw" class="button">✏️ DRAW</a></li>
+                <li><a href="#" data-mode="pull" class="button">💣️ PULL</a></li>
                 <li><a href="#" data-mode="fill" class="button">💅 FILL</a></li>
                 <li><a href="#" data-mode="move" class="button">🖐 MOVE</a></li>
                 <li><a href="#" data-mode="copy" class="button">✌️ COPY</a></li>
@@ -98,19 +99,12 @@
                         </tr>
                     </thead>
                     <tbody> </tbody>
-                    <tfoot>
-                        <tr>
-                            <td></td>
-                            <td><a href="" class="button">➕ NEW LAYER</a></td>
-                            <td></td>
-                        </tr>
-                    </tfoot>
                 </table>
 
                 <template id="layer-row">
                     <tr class="layer">
                         <td class="layer-visible"><input type="checkbox" name="show" value="0" checked></td>
-                        <td class="layer-name">Layer 1</td>
+                        <td class="layer-name"></td>
                         <td><a href="#" class="button delete-layer">DELETE</a></td>
                     </tr>
                 </template>
