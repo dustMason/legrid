@@ -1,3 +1,149 @@
+class Layer {
+  constructor(name, cells) {
+    this.cells = cells;
+    this.name = name;
+    this.visible = true;
+  }
+
+  isOn(mx, my) {
+    for (let i = 0; i < this.cells.length; i++) {
+      if (this.cells[i].isOn(mx, my)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  push(cell) {
+    this.cells.push(cell);
+  }
+
+  draw() {
+    if (this.visible) {
+      stroke(0);
+      strokeWeight(1);
+      this.cells.forEach(cell => { cell.draw() });
+    }
+  }
+
+  empty() {
+    return this.cells.length === 0;
+  }
+
+  offset(dx, dy) {
+    this.cells.forEach(cell => cell.offset(dx, dy));
+  }
+
+  finalize() {
+    this.cells.forEach(cell => { cell.finalize() });
+  }
+
+  fill(color) {
+    this.cells.forEach(cell => { cell.color = color });
+  }
+
+  clone() {
+    return new Layer(this.name + " Copy", this.cells.map(cell => {
+      return new Cell(cell.gx, cell.gy, cell.color, cell.shape);
+    }));
+  }
+
+  smooth() {
+    let cells = [];
+    this.cells.forEach(cell => {
+      if (cells[cell.gx] === undefined) {
+        cells[cell.gx] = [];
+      }
+      cells[cell.gx][cell.gy] = cell;
+    })
+    this.cells.forEach(c => {
+      let score = 0;
+
+      // if the tile above is set, add 1
+      if (cells[c.gx][c.gy - 1] !== undefined) {
+        score += 1;
+      }
+      // if the tile to the right is set, add 2
+      if (cells[c.gx + 1] !== undefined && cells[c.gx + 1][c.gy] !== undefined) {
+        score += 2;
+      }
+      // if the tile below is set, add 4
+      if (cells[c.gx][c.gy + 1] !== undefined) {
+        score += 4;
+      }
+      // if the tile to the left is set, add 8
+      if (cells[c.gx - 1] !== undefined && cells[c.gx - 1][c.gy] !== undefined) {
+        score += 8;
+      }
+      if (score === 3) {
+        c.shape = _cornerSw;
+      } else if (score === 6) {
+        c.shape = _cornerNw;
+      } else if (score === 9) {
+        c.shape = _cornerSe;
+      } else if (score === 12) {
+        c.shape = _cornerNe;
+      } else {
+        c.shape = _square;
+      }
+    });
+  }
+}
+
+class Cell {
+  constructor(gx, gy, color, shape) {
+    this.x = gx * gridZoom;
+    this.y = gy * gridZoom;
+    this.gx = gx;
+    this.gy = gy;
+    this.color = color;
+    this.shape = shape;
+    this._offset = [0,0];
+  }
+
+  static fromJSON(json) {
+    return new Cell(json.gx, json.gy, json.color, json.shape);
+  }
+
+  toJSON() {
+    return {
+      gx: this.gx,
+      gy: this.gy,
+      color: this.color,
+      shape: this.shape,
+    }
+  }
+
+  draw() {
+    drawShape(
+      this.x + this._offset[0],
+      this.y + this._offset[1],
+      this.shape,
+      palette[this.color],
+      gridZoom
+    );
+  }
+
+  offset(dx, dy) {
+    this._offset = [dx * gridZoom, dy * gridZoom];
+  }
+
+  finalize() {
+    this.x += this._offset[0];
+    this.y += this._offset[1];
+    this._offset = [0,0];
+  }
+
+  isOn(x, y) {
+    return (
+      x >= this.x &&
+      x < this.x + gridZoom &&
+      y >= this.y &&
+      y < this.y + gridZoom
+    );
+  }
+}
+
 // shapes
 const _square = "square";
 const _circle = "circle";
@@ -41,7 +187,7 @@ const backplateColor = 0;
 const borderColor = 1;
 
 let fonts = {};
-let currentLayer = []; // list of gridCells in the current drawing layer
+let currentLayer = new Layer("Layer 1", []); // list of gridCells in the current drawing layer
 let currentPos = [-1, -1]; // current grid pos
 let draggingLayer = -1;
 let dragStart = [0,0];
@@ -56,72 +202,12 @@ changeDrawTool(_pen);
 // part puller tool (hold shift to pull entire layer)
 // add 2x sized elbow pieces
 // show part on mouseover in draw mode
-// controls for backplace / border color
+// controls for backplate / border color
 // new / save / load buttons
 
 function preload() {
   fonts["albers"] = loadJSON("/fonts/albers.json");
   fonts["sevenplus"] = loadJSON("/fonts/sevenplus.json");
-}
-
-function keyTyped() {
-  if (key === "u" && stack.length > 2) {
-    stack.pop();
-  }
-}
-
-class GridCell {
-  constructor(gx, gy, color, shape) {
-    this.x = gx * gridZoom;
-    this.y = gy * gridZoom;
-    this.gx = gx;
-    this.gy = gy;
-    this.color = color;
-    this.shape = shape;
-    this._offset = [0,0];
-  }
-
-  static fromJSON(json) {
-    return new GridCell(json.gx, json.gy, json.color, json.shape);
-  }
-
-  toJSON() {
-    return {
-      gx: this.gx,
-      gy: this.gy,
-      color: this.color,
-      shape: this.shape,
-    }
-  }
-
-  draw() {
-    drawShape(
-      this.x + this._offset[0],
-      this.y + this._offset[1],
-      this.shape,
-      palette[this.color],
-      gridZoom
-    );
-  }
-
-  offset(dx, dy) {
-    this._offset = [dx * gridZoom, dy * gridZoom];
-  }
-
-  finalize() {
-    this.x += this._offset[0];
-    this.y += this._offset[1];
-    this._offset = [0,0];
-  }
-
-  isOn(x, y) {
-    return (
-      x >= this.x &&
-      x < this.x + gridZoom &&
-      y >= this.y &&
-      y < this.y + gridZoom
-    );
-  }
 }
 
 function drawShape(x, y, shape, color, size) {
@@ -152,10 +238,9 @@ function drawShape(x, y, shape, color, size) {
   }
 }
 
-let stack = [
-  makeBackground(backplateColor),
-  makeBorder(gridWidth, gridHeight, borderColor),
-];
+let stack = [];
+addLayer(makeBackground(backplateColor))
+addLayer(makeBorder(gridWidth, gridHeight, borderColor))
 
 function changeMode(newMode) {
   mode = newMode;
@@ -205,11 +290,16 @@ function draw() {
   renderLayers(stack.concat([currentLayer]));
 }
 
+function addLayer(layer) {
+  stack.push(layer);
+  renderLayerTable();
+}
+
 function mouseDragged() {
   if (mode === _copy && draggingLayer < 0) {
     const target = selectLayerIndex(mouseX, mouseY);
     if (target > 1) { // don't copy background or border
-      stack.push(copyLayer(stack[target]));
+      addLayer(stack[target].clone());
       draggingLayer = stack.length - 1;
       dragStart = [mouseX, mouseY];
     }
@@ -224,7 +314,7 @@ function mouseDragged() {
     } else {
       const dx = floor((mouseX - dragStart[0]) / gridZoom);
       const dy = floor((mouseY - dragStart[1]) / gridZoom);
-      stack[draggingLayer].forEach(cell => { cell.offset(dx, dy) });
+      stack[draggingLayer].offset(dx, dy);
     }
   }
   if (mode === _draw) {
@@ -236,18 +326,13 @@ function mouseDragged() {
 function placeTile(x, y) {
   const newCell = createCell(x, y, currentDrawColor, currentDrawTool);
   if (!newCell) return;
-  if (currentLayer.length > 0) {
-    currentLayer.push(newCell);
+  if (currentLayer.empty()) {
+    currentLayer = new Layer(`Layer ${stack.length + 1}`, [newCell]);
   } else {
-    currentLayer = [newCell];
+    currentLayer.push(newCell);
   }
 }
 
-function copyLayer(layer) {
-  return layer.map(cell => {
-    return new GridCell(cell.gx, cell.gy, cell.color, cell.shape);
-  });
-}
 
 function onBackplate(x, y) {
   return (
@@ -260,61 +345,21 @@ function onBackplate(x, y) {
 
 function mouseReleased() {
   if (draggingLayer > 0) {
-    stack[draggingLayer].forEach(cell => { cell.finalize() });
+    stack[draggingLayer].finalize();
     draggingLayer = -1;
     dragStart = [0,0];
     return false;
   }
   if (mode === _draw) {
-    if (currentLayer.length === 0 && onBackplate(mouseX, mouseY)) {
+    if (currentLayer.empty() && onBackplate(mouseX, mouseY)) {
       placeTile(mouseX, mouseY);
     }
     if (currentDrawTool === _pen) {
-      // process the currentLayer so that it renders curves
-      let cells = [];
-      for (let i = 0; i < currentLayer.length; i++) {
-        const cell = currentLayer[i];
-        if (cells[cell.gx] === undefined) {
-          cells[cell.gx] = [];
-        }
-        cells[cell.gx][cell.gy] = cell;
-      }
-      for (let i = 0; i < currentLayer.length; i++) {
-        const c = currentLayer[i];
-        let score = 0;
-
-        // if the tile above is set, add 1
-        if (cells[c.gx][c.gy - 1] !== undefined) {
-          score += 1;
-        }
-        // if the tile to the right is set, add 2
-        if (cells[c.gx + 1] !== undefined && cells[c.gx + 1][c.gy] !== undefined) {
-          score += 2;
-        }
-        // if the tile below is set, add 4
-        if (cells[c.gx][c.gy + 1] !== undefined) {
-          score += 4;
-        }
-        // if the tile to the left is set, add 8
-        if (cells[c.gx - 1] !== undefined && cells[c.gx - 1][c.gy] !== undefined) {
-          score += 8;
-        }
-        if (score === 3) {
-          currentLayer[i].shape = _cornerSw;
-        } else if (score === 6) {
-          currentLayer[i].shape = _cornerNw;
-        } else if (score === 9) {
-          currentLayer[i].shape = _cornerSe;
-        } else if (score === 12) {
-          currentLayer[i].shape = _cornerNe;
-        } else {
-          currentLayer[i].shape = _square;
-        }
-      }
+      currentLayer.smooth();
     }
-    if (currentLayer.length > 0) {
-      stack.push(currentLayer);
-      currentLayer = [];
+    if (!currentLayer.empty()) {
+      addLayer(currentLayer);
+      currentLayer = new Layer(`Layer ${stack.length + 1}`, []);
     }
   }
   if (mode === _fill) {
@@ -327,20 +372,11 @@ function mouseReleased() {
 }
 
 function renderLayers(layers) {
-  stroke(0);
-  strokeWeight(1);
-  for (let h = 0; h < layers.length; h++) {
-    for (let i = 0; i < layers[h].length; i++) {
-      layers[h][i].draw();
-    }
-  }
+  layers.forEach(layer => { layer.draw() })
 }
 
 function fillLayer(index, color) {
-  const layer = stack[index];
-  for (let i = 0; i < layer.length; i++) {
-    layer[i].color = color;
-  }
+  stack[index].fill(color);
 }
 
 function createCell(mx, my, color, shape) {
@@ -350,41 +386,75 @@ function createCell(mx, my, color, shape) {
     return null;
   }
   currentPos = [x, y];
-  return new GridCell(x, y, color, shape);
+  return new Cell(x, y, color, shape);
 }
 
 function makeBackground(color) {
-  let layer = [];
+  let cells = [];
   for (let i = 0; i < gridWidth; i++) {
     for (let j = 0; j < gridHeight; j++) {
-      layer.push(new GridCell(i, j, color, _square))
+      cells.push(new Cell(i, j, color, _square))
     }
   }
-  return layer;
+  return new Layer("Background", cells);
 }
 
 function makeBorder(width, height, color) {
-  let layer = [];
+  let cells = [];
   for (let i = 0; i < width; i++) {
-    layer.push(new GridCell(i, height - 1, color, _square))
-    layer.push(new GridCell(i, 0, color, _square))
+    cells.push(new Cell(i, height - 1, color, _square))
+    cells.push(new Cell(i, 0, color, _square))
   }
   for (let j = 0; j < height; j++) {
-    layer.push(new GridCell(0, j, color, _square));
-    layer.push(new GridCell(width - 1, j, color, _square));
+    cells.push(new Cell(0, j, color, _square));
+    cells.push(new Cell(width - 1, j, color, _square));
   }
-  return layer;
+  return new Layer("Border", cells);
 }
 
 function selectLayerIndex(mx, my) {
   for (let i = stack.length - 1; i >= 0; i--) {
-    for (let j = 0; j < stack[i].length; j++) {
-      if (stack[i][j].isOn(mx, my)) {
-        return i;
-      }
+    if (stack[i].isOn(mx, my)) {
+      return i;
     }
   }
+  return -1;
 }
+
+function renderLayerTable() {
+    const tbody = document.querySelector("#tools-layers tbody");
+    const template = document.querySelector('#layer-row');
+    tbody.innerHTML = '';
+    stack.forEach((layer, index) => {
+      const row = template.content.cloneNode(true);
+      row.querySelector('.layer-name').textContent = layer.name
+      row.querySelector(".layer-visible input").checked = layer.visible;
+      row.querySelector(".layer-visible input").value = index;
+      // row.querySelector('.layer-color').style.backgroundColor = palette[stack[i].cells[0].color];
+      row.querySelector('.delete-layer').dataset.index = index;
+      row.querySelector('.delete-layer').addEventListener('click', (e) => {
+        const i = parseInt(e.target.dataset.index);
+        stack.splice(i, 1);
+        renderLayerTable();
+        return false;
+      });
+      tbody.appendChild(row);
+    });
+}
+
+const layersForm = document.querySelector('#layers-form');
+layersForm.addEventListener("change", () => {
+  const formData = new FormData(document.querySelector("#layers-form"));
+  let shows = {};
+  for (let pair of formData.entries()) {
+    if (pair[0] === "show") {
+      shows[parseInt(pair[1])] = true;
+    }
+  }
+  for (let i = 0; i < stack.length; i++) {
+    stack[i].visible = !!shows[i];
+  }
+});
 
 const leftNavs = document.querySelectorAll("#left-nav a");
 for (let i = 0; i < leftNavs.length; i++) {
@@ -400,13 +470,16 @@ for (let i = 0; i < drawTools.length; i++) {
   });
 }
 
-const colorBubbles = document.querySelectorAll("#tools-draw .colors circle");
-for (let i = 0; i < colorBubbles.length; i++) {
-  colorBubbles[i].closest("li").dataset.color = i.toString();
-  colorBubbles[i].style.fill = palette[i];
-  colorBubbles[i].addEventListener("click", (e) => {
+const colorBubbleTemplate = document.querySelector("#color-bubble");
+const colorBubbles = document.querySelector("#tools-draw .colors ul");
+for (let i = 0; i < palette.length; i++) {
+  const bubble = colorBubbleTemplate.content.cloneNode(true);
+  bubble.querySelector("li").dataset.color = i.toString();
+  bubble.querySelector("circle").style.fill = palette[i];
+  bubble.querySelector("circle").addEventListener("click", (e) => {
     changeDrawColor(parseInt(e.target.closest("li").dataset.color));
   });
+  colorBubbles.appendChild(bubble);
 }
 
 const space = { pixels: [[0]], offset: 0 };
@@ -433,6 +506,7 @@ typeForm.addEventListener("submit", (e) => {
         glyph = fonts[font][txt[i].toLowerCase()];
       }
       if (glyph) {
+        glyph.letter = txt[i];
         glyphs.push(glyph);
         width += glyph.pixels[0].length + 1;
         const gHeight = glyph.offset + glyph.pixels.length;
@@ -446,16 +520,16 @@ typeForm.addEventListener("submit", (e) => {
 
     for (let i = 0; i < glyphs.length; i++) {
       const glyph = glyphs[i];
-      const layer = [];
+      const layer = new Layer(glyph.letter, []);
       for (let y = 0; y < glyph.pixels.length; y++) {
         for (let x = 0; x < glyph.pixels[0].length; x++) {
           if (glyph.pixels[y][x] !== 0) {
             const n = fontShapeMap[glyph.pixels[y][x]];
-            layer.push(new GridCell(x + pos[0], y + pos[1] + glyph.offset, currentDrawColor, n));
+            layer.push(new Cell(x + pos[0], y + pos[1] + glyph.offset, currentDrawColor, n));
           }
         }
       }
-      stack.push(layer);
+      addLayer(layer);
       pos = [pos[0] + glyph.pixels[0].length + 1, pos[1]];
     }
     return false;

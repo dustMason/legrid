@@ -32,6 +32,29 @@ a {
     color: #fff;
 }
 
+a.button {
+    display: inline-block;
+    background: #3172A0;
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.52);
+    border-radius: 10px;
+    padding: 5px 10px;
+    margin: 0;
+    color: #fff;
+    font-size: 14px;
+    text-transform: uppercase;
+}
+
+a.button.active {
+    background: #fff;
+    color: #000;
+}
+
+section > div {
+    display: inline-block;
+    vertical-align: top;
+    margin: 0 15px 15px 0;
+}
+
 select, input {
     font-size: 1.2em;
     padding: 8px;
@@ -54,23 +77,6 @@ select, input {
     right: 15px;
 }
 
-nav a {
-    display: inline-block;
-    background: #3172A0;
-    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.52);
-    border-radius: 10px;
-    padding: 5px 10px;
-    margin: 0;
-    color: #fff;
-    font-size: 14px;
-    text-transform: uppercase;
-}
-
-nav a.active {
-    background: #fff;
-    color: #000;
-}
-
 #tools-draw div {
     padding: 0 0 10px 0;
 }
@@ -83,5 +89,8 @@ nav a.active {
 #tools-draw li.active rect,
 #tools-draw li.active circle {
     filter: drop-shadow(5px 5px 0px rgb(0 0 0 / 0.8));
+}
 
+#tools-layers td {
+    padding: 3px;
 }

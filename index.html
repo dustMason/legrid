@@ -9,10 +9,10 @@
         <div id="logo"><img src="./dots.png" alt="dots"></div>
         <nav id="left-nav">
             <ul>
-                <li><a href="#" data-mode="draw">✏️ DRAW</a></li>
-                <li><a href="#" data-mode="fill">💅 FILL</a></li>
-                <li><a href="#" data-mode="move">🖐 MOVE</a></li>
-                <li><a href="#" data-mode="copy">✌️ COPY</a></li>
+                <li><a href="#" data-mode="draw" class="button">✏️ DRAW</a></li>
+                <li><a href="#" data-mode="fill" class="button">💅 FILL</a></li>
+                <li><a href="#" data-mode="move" class="button">🖐 MOVE</a></li>
+                <li><a href="#" data-mode="copy" class="button">✌️ COPY</a></li>
             </ul>
         </nav>
         <nav id="right-nav">
@@ -69,15 +69,10 @@
                 </ul>
             </div>
             <div class="colors">
-                <ul>
+                <ul></ul>
+                <template id="color-bubble">
                     <li><svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="25" cy="25" r="25" fill="#000"/></svg></li>
-                    <li><svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="25" cy="25" r="25" fill="#000"/></svg></li>
-                    <li><svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="25" cy="25" r="25" fill="#000"/></svg></li>
-                    <li><svg width="49" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="25" cy="25" r="25" fill="#000"/></svg></li>
-                    <li><svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="25" cy="25" r="25" fill="#000"/></svg></li>
-                    <li><svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="25" cy="25" r="25" fill="#000"/></svg></li>
-                    <li><svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="25" cy="25" r="25" fill="#000"/></svg></li>
-                </ul>
+                </template>
             </div>
         </div>
         <div id="tools-type">
@@ -89,6 +84,36 @@
                 </select>
                 <input type="text" id="type" name="message" />
                 <input type="submit" value="Enter" />
+            </form>
+        </div>
+        <div id="tools-layers">
+            <h1>LAYERS</h1>
+            <form action="" id="layers-form">
+                <table>
+                    <thead>
+                        <tr>
+                            <td>️👁</td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                    </thead>
+                    <tbody> </tbody>
+                    <tfoot>
+                        <tr>
+                            <td></td>
+                            <td><a href="" class="button">➕ NEW LAYER</a></td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <template id="layer-row">
+                    <tr class="layer">
+                        <td class="layer-visible"><input type="checkbox" name="show" value="0" checked></td>
+                        <td class="layer-name">Layer 1</td>
+                        <td><a href="#" class="button delete-layer">DELETE</a></td>
+                    </tr>
+                </template>
             </form>
         </div>
     </section>
