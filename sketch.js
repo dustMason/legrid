@@ -4,10 +4,15 @@ class Layer {
     this.name = name;
     this.visible = true;
     this.locations = new Set(this.cells.map(c => { return `${c.gx}.${c.gy}` })); // set of [gx,gy]
+    this.locked = false;
   }
 
   has(gx, gy) {
     return this.locations.has(`${gx}.${gy}`);
+  }
+
+  lock() {
+    this.locked = true;
   }
 
   push(cell, smooth = false) {
@@ -20,6 +25,52 @@ class Layer {
     if (smooth) {
       this.smooth();
     }
+  }
+
+  toFontJSON() {
+    const min = { gx: Infinity, gy: Infinity };
+    const max = { gx: -Infinity, gy: -Infinity };
+    this.cells.forEach(c => {
+      if (c.gx < min.gx) { min.gx = c.gx; }
+      if (c.gx > max.gx) { max.gx = c.gx; }
+      if (c.gy < min.gy) { min.gy = c.gy; }
+      if (c.gy > max.gy) { max.gy = c.gy; }
+    });
+
+    const out = {};
+    out[this.name] = {
+      "offset": 0,
+      "pixels": [],
+    };
+    const colors = new Set();
+    this.cells.forEach(c => { colors.add(c.color) });
+    colors.forEach(color => {
+      const cells = this.cells.filter(c => { return c.color === color });
+      const locs = {};
+      const rows = [];
+      cells.forEach(c => {
+        locs[`${c.gx}.${c.gy}`] = c
+      });
+      for (let y = min.gy; y <= max.gy; y++) {
+        const row = [];
+        for (let x = min.gx; x <= max.gx; x++) {
+          const k = `${x}.${y}`;
+          if (locs[k]) {
+            row.push(fontShapeMapInv[locs[k].shape]);
+          } else {
+            row.push(0);
+          }
+        }
+        rows.push(row);
+      }
+      out[this.name]["pixels"].push(rows);
+    });
+    if (colors.size > 1) {
+      out[this.name]["layers"] = colors.size;
+    } else {
+      out[this.name]["pixels"] = out[this.name]["pixels"][0];
+    }
+    return out
   }
 
   remove(gx, gy) {
@@ -164,13 +215,19 @@ const _cornerNw = "cornerNW";
 const _pen = "pen";
 
 // shape map for font rendering
-fontShapeMap = {
+const fontShapeMap = {
   1: _square,
   2: _circle,
   3: _cornerNe,
   4: _cornerSe,
   5: _cornerSw,
   6: _cornerNw,
+}
+
+// inverted map
+const fontShapeMapInv = {};
+for (let k in fontShapeMap) {
+  fontShapeMapInv[fontShapeMap[k]] = parseInt(k);
 }
 
 // modes
@@ -220,6 +277,12 @@ function keyPressed() {
   }
 }
 
+function keyTyped() {
+  if (key === "d") {
+    renderDebug(stack);
+  }
+}
+
 function keyReleased() {
   if (keyCode === SHIFT) {
     shiftPressed = false;
@@ -229,6 +292,9 @@ function keyReleased() {
 function preload() {
   fonts["albers"] = loadJSON("/fonts/albers.json");
   fonts["sevenplus"] = loadJSON("/fonts/sevenplus.json");
+  fonts["bubblecap"] = loadJSON("/fonts/bubblecap.json");
+  fonts["doubleshadow"] = loadJSON("/fonts/doubleshadow.json");
+  fonts["2x2"] = loadJSON("/fonts/2x2.json");
 }
 
 function drawShape(x, y, shape, color, size) {
@@ -409,6 +475,15 @@ function mouseReleased() {
   return false; // prevent default browser behavior
 }
 
+function renderDebug(stack) {
+  let out = "";
+  // do not render the first two layers
+  for (let i = 2; i < stack.length; i++) {
+    out += JSON.stringify(stack[i].toFontJSON()) + "\n";
+  }
+  document.querySelector("#debug pre").innerHTML = out;
+}
+
 function renderLayers(layers) {
   layers.forEach(layer => { layer.draw() })
 }
@@ -420,7 +495,9 @@ function makeBackground(color) {
       cells.push(new Cell(i, j, color, _square))
     }
   }
-  return new Layer("Background", cells);
+  const l = new Layer("Background", cells);
+  l.lock();
+  return l
 }
 
 function makeBorder(width, height, color) {
@@ -448,23 +525,30 @@ function selectLayerIndex(mx, my) {
 }
 
 function renderLayerTable() {
-    const tbody = document.querySelector("#tools-layers tbody");
-    const template = document.querySelector('#layer-row');
-    tbody.innerHTML = '';
-    stack.forEach((layer, index) => {
-      const row = template.content.cloneNode(true);
-      row.querySelector('.layer-name').textContent = layer.name
-      row.querySelector(".layer-visible input").checked = layer.visible;
-      row.querySelector(".layer-visible input").value = index;
-      row.querySelector('.delete-layer').dataset.index = index;
-      row.querySelector('.delete-layer').addEventListener('click', (e) => {
+  const tbody = document.querySelector("#tools-layers tbody");
+  const template = document.querySelector('#layer-row');
+  tbody.innerHTML = '';
+  stack.forEach((layer, index) => {
+    const row = template.content.cloneNode(true);
+    row.querySelector('.layer-name').textContent = layer.name
+    const checkbox = row.querySelector('.layer-visible input');
+    const deleteButton = row.querySelector('.delete-layer');
+    if (index === 0) { // skip the background
+      checkbox.remove();
+      deleteButton.remove();
+    } else {
+      checkbox.checked = layer.visible;
+      checkbox.value = index;
+      deleteButton.dataset.index = index;
+      deleteButton.addEventListener('click', (e) => {
         const i = parseInt(e.target.dataset.index);
         stack.splice(i, 1);
         renderLayerTable();
         return false;
       });
-      tbody.appendChild(row);
-    });
+    }
+    tbody.appendChild(row);
+  });
 }
 
 const layersForm = document.querySelector('#layers-form');
@@ -476,8 +560,9 @@ layersForm.addEventListener("change", () => {
       shows[parseInt(pair[1])] = true;
     }
   }
+  console.log(shows);
   for (let i = 0; i < stack.length; i++) {
-    stack[i].visible = !!shows[i];
+    stack[i].visible = stack[i].locked || !!shows[i];
   }
 });
 
@@ -533,29 +618,38 @@ typeForm.addEventListener("submit", (e) => {
       if (glyph) {
         glyph.letter = txt[i];
         glyphs.push(glyph);
-        width += glyph.pixels[0].length + 1;
-        const gHeight = glyph.offset + glyph.pixels.length;
-        if (gHeight > height) {
-          height = gHeight;
+        if (glyph.layers) {
+          width += glyph.pixels[0][0].length + 1;
+          height = Math.max(height, glyph.offset + glyph.pixels[0].length);
+        } else {
+          width += glyph.pixels[0].length + 1;
+          height = Math.max(height, glyph.offset + glyph.pixels.length);
         }
       }
     }
 
     let pos = [Math.floor((gridWidth - width) / 2), Math.floor((gridHeight - height) / 2)];
-
     for (let i = 0; i < glyphs.length; i++) {
       const glyph = glyphs[i];
-      const layer = new Layer(glyph.letter, []);
-      for (let y = 0; y < glyph.pixels.length; y++) {
-        for (let x = 0; x < glyph.pixels[0].length; x++) {
-          if (glyph.pixels[y][x] !== 0) {
-            const n = fontShapeMap[glyph.pixels[y][x]];
-            layer.push(new Cell(x + pos[0], y + pos[1] + glyph.offset, currentDrawColor, n));
+      let gLayers = [glyph.pixels];
+      if (glyph.layers) {
+        gLayers = glyph.pixels;
+      }
+      for (let j = 0; j < gLayers.length; j++) {
+        const layer = new Layer(`${glyph.letter} ${j}`, []);
+        const pixels = gLayers[j];
+        const color = (currentDrawColor + j) % palette.length;
+        for (let y = 0; y < pixels.length; y++) {
+          for (let x = 0; x < pixels[0].length; x++) {
+            if (pixels[y][x] !== 0) {
+              const n = fontShapeMap[pixels[y][x]];
+              layer.push(new Cell(x + pos[0], y + pos[1] + glyph.offset, color, n));
+            }
           }
         }
+        addLayer(layer);
       }
-      addLayer(layer);
-      pos = [pos[0] + glyph.pixels[0].length + 1, pos[1]];
+      pos = [pos[0] + gLayers[0][0].length + 1, pos[1]];
     }
     return false;
   }

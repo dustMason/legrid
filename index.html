@@ -82,6 +82,9 @@
                 <select name="font" id="font">
                     <option value="albers">Albers</option>
                     <option value="sevenplus">Seven Plus</option>
+                    <option value="bubblecap">Bubble Cap</option>
+                    <option value="doubleshadow">Double Shadow (WIP)</option>
+                    <option value="2x2">2 x 2</option>
                 </select>
                 <input type="text" id="type" name="message" />
                 <input type="submit" value="Enter" />
@@ -90,17 +93,7 @@
         <div id="tools-layers">
             <h1>LAYERS</h1>
             <form action="" id="layers-form">
-                <table>
-                    <thead>
-                        <tr>
-                            <td>️👁</td>
-                            <td></td>
-                            <td></td>
-                        </tr>
-                    </thead>
-                    <tbody> </tbody>
-                </table>
-
+                <table><tbody></tbody></table>
                 <template id="layer-row">
                     <tr class="layer">
                         <td class="layer-visible"><input type="checkbox" name="show" value="0" checked></td>
@@ -111,6 +104,9 @@
             </form>
         </div>
     </section>
+    <div id="debug">
+        <pre></pre>
+    </div>
     <script src="./p5.min.js"></script>
     <script src="./sketch.js"></script>
 </body>
